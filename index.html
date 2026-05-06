@@ -1,1 +1,552 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Fluid Host for Win32"/><title>Loop Component</title><script defer="defer" src="./static/js/main.f636af4c.js"></script><link href="./static/css/main.a35a5efb.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="animatedSplashScreen" hidden></div><div id="fluidElement"></div></body></html>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Examen Diagnóstico — Proyecto Integrador I</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root { --bg:#0d1117; --surface:#161b22; --surface2:#21262d; --accent:#58a6ff; --accent2:#3fb950; --text:#e6edf3; --muted:#8b949e; --border:#30363d; --correct:#3fb950; --wrong:#f85149; --radius:8px; }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--bg); color:var(--text); font-family:'Syne',sans-serif; min-height:100vh; }
+  header { background:var(--surface); border-bottom:2px solid var(--accent); padding:24px 40px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:16px; }
+  .header-left h1 { font-size:1.4rem; font-weight:800; letter-spacing:-0.5px; color:var(--accent); }
+  .header-left p { font-size:0.8rem; color:var(--muted); font-family:'IBM Plex Mono',monospace; margin-top:4px; }
+  .badge { background:var(--accent); color:#000; font-size:0.7rem; font-weight:700; padding:4px 10px; border-radius:20px; font-family:'IBM Plex Mono',monospace; letter-spacing:1px; }
+  .progress-wrap { padding:16px 40px; background:var(--bg); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:16px; }
+  .progress-bar { flex:1; height:4px; background:var(--border); border-radius:2px; overflow:hidden; }
+  .progress-fill { height:100%; background:var(--accent); border-radius:2px; transition:width 0.4s ease; width:0%; }
+  .progress-text { font-family:'IBM Plex Mono',monospace; font-size:0.75rem; color:var(--muted); white-space:nowrap; }
+  main { max-width:820px; margin:0 auto; padding:40px 24px 80px; }
+  #name-screen { text-align:center; padding:40px 0; }
+  #name-screen h2 { font-size:1.8rem; font-weight:800; margin-bottom:12px; }
+  #name-screen p { color:var(--muted); font-family:'IBM Plex Mono',monospace; font-size:0.85rem; margin-bottom:32px; }
+  .name-input-wrap { display:flex; flex-direction:column; align-items:center; gap:16px; }
+  #student-name { background:var(--surface); border:2px solid var(--border); border-radius:var(--radius); color:var(--text); font-family:'Syne',sans-serif; font-size:1.1rem; font-weight:600; padding:16px 24px; width:100%; max-width:440px; outline:none; transition:border-color 0.2s; text-align:center; }
+  #student-name:focus { border-color:var(--accent); }
+  #student-name::placeholder { color:var(--muted); font-weight:400; }
+  .btn-start { background:var(--accent); color:#000; font-family:'Syne',sans-serif; font-weight:800; font-size:1rem; padding:16px 40px; border:none; border-radius:var(--radius); cursor:pointer; transition:all 0.2s; }
+  .btn-start:hover { opacity:0.85; transform:translateY(-2px); }
+  .name-note { font-size:0.75rem; color:var(--muted); font-family:'IBM Plex Mono',monospace; }
+  .question-card { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:32px; display:none; animation:fadeIn 0.3s ease; }
+  .question-card.active { display:block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+  .q-header { display:flex; align-items:center; gap:12px; margin-bottom:20px; }
+  .q-number { background:var(--accent); color:#000; font-weight:800; font-size:0.8rem; width:32px; height:32px; border-radius:50%; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+  .q-unit { font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--accent2); background:rgba(63,185,80,0.1); padding:3px 10px; border-radius:20px; border:1px solid rgba(63,185,80,0.25); }
+  .q-text { font-size:1.05rem; font-weight:600; line-height:1.5; margin-bottom:24px; }
+  .options { display:flex; flex-direction:column; gap:10px; }
+  .option { background:var(--surface2); border:1.5px solid var(--border); border-radius:var(--radius); padding:14px 18px; cursor:pointer; display:flex; align-items:center; gap:14px; transition:all 0.2s; font-size:0.92rem; line-height:1.4; }
+  .option:hover:not(.disabled) { border-color:var(--accent); background:rgba(88,166,255,0.06); }
+  .option-letter { font-family:'IBM Plex Mono',monospace; font-weight:500; font-size:0.8rem; color:var(--muted); width:20px; flex-shrink:0; }
+  .option.correct { border-color:var(--correct); background:rgba(63,185,80,0.08); }
+  .option.correct .option-letter { color:var(--correct); }
+  .option.wrong { border-color:var(--wrong); background:rgba(248,81,73,0.08); }
+  .option.wrong .option-letter { color:var(--wrong); }
+  .option.disabled { cursor:default; }
+  .feedback { margin-top:18px; padding:14px 18px; border-radius:var(--radius); font-size:0.88rem; line-height:1.5; display:none; }
+  .feedback.show { display:block; }
+  .feedback.correct-fb { background:rgba(63,185,80,0.08); border:1px solid rgba(63,185,80,0.3); color:var(--correct); }
+  .feedback.wrong-fb { background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.3); color:#ff8080; }
+  .nav-buttons { display:flex; justify-content:space-between; align-items:center; margin-top:28px; gap:12px; }
+  .btn { font-family:'Syne',sans-serif; font-weight:700; font-size:0.85rem; padding:12px 24px; border-radius:var(--radius); border:none; cursor:pointer; transition:all 0.2s; }
+  .btn-primary { background:var(--accent); color:#000; }
+  .btn-primary:hover { opacity:0.85; transform:translateY(-1px); }
+  .btn-secondary { background:transparent; color:var(--muted); border:1px solid var(--border); }
+  .btn-secondary:hover { color:var(--text); border-color:var(--muted); }
+  .btn:disabled { opacity:0.3; cursor:default; transform:none; }
+  #results-screen { display:none; text-align:center; }
+  #results-screen.active { display:block; }
+  .student-label { font-family:'IBM Plex Mono',monospace; font-size:0.8rem; color:var(--accent); margin-bottom:16px; }
+  .score-circle { width:140px; height:140px; border-radius:50%; border:4px solid var(--accent); display:flex; flex-direction:column; align-items:center; justify-content:center; margin:0 auto 24px; background:rgba(88,166,255,0.05); }
+  .score-num { font-size:2.8rem; font-weight:800; color:var(--accent); line-height:1; }
+  .score-label { font-family:'IBM Plex Mono',monospace; font-size:0.7rem; color:var(--muted); margin-top:4px; }
+  .result-title { font-size:1.6rem; font-weight:800; margin-bottom:8px; }
+  .result-sub { color:var(--muted); font-size:0.9rem; margin-bottom:32px; font-family:'IBM Plex Mono',monospace; }
+  .save-status { margin:16px auto; padding:12px 20px; border-radius:var(--radius); font-family:'IBM Plex Mono',monospace; font-size:0.8rem; max-width:420px; }
+  .save-status.saving { background:rgba(88,166,255,0.1); border:1px solid rgba(88,166,255,0.3); color:var(--accent); }
+  .save-status.saved  { background:rgba(63,185,80,0.08); border:1px solid rgba(63,185,80,0.3); color:var(--correct); }
+  .save-status.error  { background:rgba(248,81,73,0.08); border:1px solid rgba(248,81,73,0.3); color:#ff8080; }
+  .qr-section { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:32px; margin-top:32px; }
+  .qr-section h3 { font-size:1rem; font-weight:700; margin-bottom:8px; color:var(--accent2); }
+  .qr-section p { font-size:0.8rem; color:var(--muted); margin-bottom:20px; font-family:'IBM Plex Mono',monospace; }
+  #qrcode { display:inline-block; padding:16px; background:white; border-radius:8px; }
+  .review-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:32px; }
+  .review-item { aspect-ratio:1; border-radius:6px; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:700; font-family:'IBM Plex Mono',monospace; }
+  .review-item.c { background:rgba(63,185,80,0.15); color:var(--correct); border:1px solid rgba(63,185,80,0.3); }
+  .review-item.w { background:rgba(248,81,73,0.15); color:var(--wrong); border:1px solid rgba(248,81,73,0.3); }
+  .btn-restart { margin-top:24px; background:var(--accent); color:#000; font-family:'Syne',sans-serif; font-weight:700; padding:14px 32px; border:none; border-radius:var(--radius); cursor:pointer; font-size:0.9rem; transition:all 0.2s; }
+  .btn-restart:hover { opacity:0.85; }
+  @media(max-width:600px){ header{padding:20px} .progress-wrap{padding:12px 20px} main{padding:24px 16px 60px} .question-card{padding:22px} .review-grid{grid-template-columns:repeat(4,1fr)} }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-left">
+    <h1>Examen Diagnóstico</h1>
+    <p>Proyecto Integrador I — Licenciatura en ITID · 3er Cuatrimestre</p>
+  </div>
+  <span class="badge">20 PREGUNTAS</span>
+</header>
+<div class="progress-wrap">
+  <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+  <span class="progress-text" id="progress-text">0 / 20</span>
+</div>
+<main>
+  <div id="name-screen">
+    <h2>¡Bienvenido! 👋</h2>
+    <p>Ingresa tu nombre completo para comenzar el examen diagnóstico</p>
+    <div class="name-input-wrap">
+      <input type="text" id="student-name" placeholder="Nombre completo" maxlength="80" autocomplete="off"/>
+      <button class="btn-start" onclick="startQuiz()">Comenzar examen →</button>
+      <span class="name-note">Tus resultados se guardarán automáticamente al finalizar</span>
+    </div>
+  </div>
+  <div id="quiz-container" style="display:none"></div>
+  <div id="results-screen">
+    <div class="student-label" id="student-label">—</div>
+    <div class="score-circle">
+      <div class="score-num" id="score-num">0</div>
+      <div class="score-label">/ 20</div>
+    </div>
+    <div class="result-title" id="result-title">—</div>
+    <div class="result-sub" id="result-sub">—</div>
+    <div class="save-status saving" id="save-status">⏳ Guardando resultados...</div>
+    <div class="review-grid" id="review-grid"></div>
+    <button class="btn-restart" onclick="restartQuiz()">↺ Nuevo intento</button>
+    <div class="qr-section">
+      <h3>📱 Comparte este examen</h3>
+      <p>Escanea el QR para acceder desde cualquier dispositivo</p>
+      <div id="qrcode"></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const WEBAPP_URL = 'https://script.google.com/macros/s/AKfycbxT8VjmKVX8OR7jJVuA719sc_E-Lv5AjngoijCbXmTf2DwXyQFjO6MoYvLV1Z8UB9JnUw/exec';
+
+// Banco de preguntas — opciones se mezclan aleatoriamente en cada intento
+const bank = [
+  // Unidad I — Análisis de entorno
+  {
+    unit:"Unidad I — Análisis de entorno",
+    text:"¿Qué es la observación como técnica para identificar problemas en un proyecto?",
+    correctText:"Examinar directamente la realidad en distintos niveles para detectar necesidades o problemas",
+    options:[
+      "Examinar directamente la realidad en distintos niveles para detectar necesidades o problemas",
+      "Revisar únicamente fuentes bibliográficas especializadas",
+      "Aplicar encuestas masivas a la población",
+      "Comparar resultados financieros de distintas empresas"
+    ],
+    explanation:"La observación consiste en examinar la realidad en distintos niveles para identificar problemas o necesidades de forma directa."
+  },
+  {
+    unit:"Unidad I — Análisis de entorno",
+    text:"¿Qué información se integra en la definición del problema dentro de un proyecto?",
+    correctText:"Antecedentes, características, manifestaciones, interesados, afectados, beneficiados y análisis causa-efecto",
+    options:[
+      "Solo el presupuesto y los recursos disponibles",
+      "Antecedentes, características, manifestaciones, interesados, afectados, beneficiados y análisis causa-efecto",
+      "Únicamente el número de personas afectadas",
+      "Solo la descripción del producto final esperado"
+    ],
+    explanation:"La definición del problema integra información cualitativa y cuantitativa: antecedentes, características, manifestaciones, interesados, afectados, beneficiados y análisis causa-efecto."
+  },
+  {
+    unit:"Unidad I — Análisis de entorno",
+    text:"¿Qué es la técnica SCAMPER en el contexto de la creatividad para proyectos?",
+    correctText:"Una técnica creativa que propone Sustituir, Combinar, Adaptar, Modificar, Poner, Eliminar y Revertir",
+    options:[
+      "Un método de evaluación de riesgos en proyectos de software",
+      "Una técnica creativa que propone Sustituir, Combinar, Adaptar, Modificar, Poner, Eliminar y Revertir",
+      "Un diagrama para representar el flujo de trabajo del equipo",
+      "Un protocolo de comunicación entre los interesados del proyecto"
+    ],
+    explanation:"SCAMPER es una técnica de creatividad que guía la generación de ideas a través de: Sustituir, Combinar, Adaptar, Modificar, Poner, Eliminar y Revertir."
+  },
+  {
+    unit:"Unidad I — Análisis de entorno",
+    text:"¿Qué es el Design Thinking como metodología para proyectos?",
+    correctText:"Un proceso creativo centrado en las personas para innovar y resolver problemas de forma empática",
+    options:[
+      "Un lenguaje de programación orientado al diseño gráfico",
+      "Un protocolo de gestión de bases de datos relacionales",
+      "Un proceso creativo centrado en las personas para innovar y resolver problemas de forma empática",
+      "Una técnica para crear diagramas de flujo de sistemas"
+    ],
+    explanation:"El Design Thinking es un proceso creativo e iterativo centrado en las personas que busca resolver problemas de forma empática e innovadora."
+  },
+  {
+    unit:"Unidad I — Análisis de entorno",
+    text:"¿Qué debe contener el perfil del proyecto en la Unidad I?",
+    correctText:"El entorno general, la necesidad o problemática a resolver y la visión del proyecto",
+    options:[
+      "Solo el presupuesto detallado y el cronograma de actividades",
+      "Únicamente el listado de integrantes del equipo y sus roles",
+      "Solo los resultados de las pruebas realizadas al prototipo",
+      "El entorno general, la necesidad o problemática a resolver y la visión del proyecto"
+    ],
+    explanation:"El portafolio de la Unidad I incluye el entorno general, el perfil del proyecto, la necesidad o problemática a resolver y la visión del proyecto."
+  },
+
+  // Unidad II — Planificación
+  {
+    unit:"Unidad II — Planificación",
+    text:"¿Para qué se utiliza el Diagrama de Gantt en la gestión de proyectos?",
+    correctText:"Para representar visualmente la planificación temporal de las actividades y su duración",
+    options:[
+      "Para representar visualmente la planificación temporal de las actividades y su duración",
+      "Para modelar la base de datos del sistema a desarrollar",
+      "Para documentar los casos de uso del sistema",
+      "Para calcular el presupuesto total del proyecto"
+    ],
+    explanation:"El Diagrama de Gantt es una herramienta de planificación que representa de forma visual las actividades del proyecto y su distribución en el tiempo."
+  },
+  {
+    unit:"Unidad II — Planificación",
+    text:"¿Qué es un tablero Kanban en el contexto de metodologías ágiles?",
+    correctText:"Una herramienta visual para gestionar el flujo de trabajo dividiendo tareas en columnas como 'Por hacer', 'En progreso' y 'Hecho'",
+    options:[
+      "Un documento que detalla los requerimientos funcionales del sistema",
+      "Un diagrama que muestra las dependencias entre actividades del proyecto",
+      "Un informe de los resultados obtenidos al finalizar el proyecto",
+      "Una herramienta visual para gestionar el flujo de trabajo dividiendo tareas en columnas como 'Por hacer', 'En progreso' y 'Hecho'"
+    ],
+    explanation:"El tablero Kanban es una herramienta ágil visual que organiza el flujo de trabajo en columnas para visualizar el estado de cada tarea del proyecto."
+  },
+  {
+    unit:"Unidad II — Planificación",
+    text:"¿Qué elementos deben definirse en el plan del proyecto?",
+    correctText:"Recursos humanos, materiales, tecnológicos y económicos, interesados, actividades, responsables y duración de tareas",
+    options:[
+      "Solo el nombre del proyecto y la fecha de entrega final",
+      "Recursos humanos, materiales, tecnológicos y económicos, interesados, actividades, responsables y duración de tareas",
+      "Únicamente el código fuente del sistema a desarrollar",
+      "Solo el presupuesto y los proveedores de tecnología"
+    ],
+    explanation:"El plan del proyecto debe contemplar recursos, interesados, actividades, responsables por etapa, secuencia y duración de las tareas."
+  },
+  {
+    unit:"Unidad II — Planificación",
+    text:"¿Qué es el Roadmap en la gestión de proyectos?",
+    correctText:"Una hoja de ruta visual que muestra las metas, hitos y dirección del proyecto a lo largo del tiempo",
+    options:[
+      "Un mapa de red que describe la infraestructura tecnológica del proyecto",
+      "Una hoja de ruta visual que muestra las metas, hitos y dirección del proyecto a lo largo del tiempo",
+      "Un documento con la lista de errores encontrados durante las pruebas",
+      "Un esquema de la base de datos del sistema"
+    ],
+    explanation:"El Roadmap es una hoja de ruta que comunica la dirección, metas e hitos del proyecto de forma visual y flexible a lo largo del tiempo."
+  },
+  {
+    unit:"Unidad II — Planificación",
+    text:"¿Qué es la Estructura de Desglose de Trabajo (EDT) en un proyecto?",
+    correctText:"Una descomposición jerárquica del trabajo del proyecto en entregables y tareas más pequeñas y manejables",
+    options:[
+      "Un diagrama que muestra la jerarquía del equipo de trabajo",
+      "Un listado de los errores detectados durante las pruebas del sistema",
+      "Una descomposición jerárquica del trabajo del proyecto en entregables y tareas más pequeñas y manejables",
+      "Un esquema de la arquitectura del software a desarrollar"
+    ],
+    explanation:"La EDT descompone jerárquicamente el trabajo total del proyecto en entregables y tareas más pequeñas para facilitar su planificación y control."
+  },
+
+  // Unidad III — Diseño, desarrollo y pruebas
+  {
+    unit:"Unidad III — Diseño y desarrollo",
+    text:"¿Qué es un prototipo en el contexto del desarrollo de proyectos?",
+    correctText:"Una versión preliminar o modelo del producto que permite validar ideas y requerimientos antes del desarrollo final",
+    options:[
+      "El producto terminado y listo para su implementación en producción",
+      "Un documento formal que describe todos los requerimientos del sistema",
+      "Una versión preliminar o modelo del producto que permite validar ideas y requerimientos antes del desarrollo final",
+      "Un informe de los resultados de las pruebas de software"
+    ],
+    explanation:"Un prototipo es una versión preliminar del producto que permite explorar y validar ideas, requerimientos y funcionalidades antes del desarrollo definitivo."
+  },
+  {
+    unit:"Unidad III — Diseño y desarrollo",
+    text:"¿Qué son los indicadores de desempeño en un proyecto?",
+    correctText:"Métricas cuantitativas o cualitativas que permiten medir el progreso y la efectividad del proyecto",
+    options:[
+      "Las herramientas de programación seleccionadas para el proyecto",
+      "Métricas cuantitativas o cualitativas que permiten medir el progreso y la efectividad del proyecto",
+      "Los integrantes del equipo evaluados por su desempeño individual",
+      "Los errores detectados durante la fase de pruebas del sistema"
+    ],
+    explanation:"Los indicadores de desempeño son métricas cuantitativas o cualitativas que permiten evaluar el progreso, la efectividad y el cumplimiento de objetivos del proyecto."
+  },
+  {
+    unit:"Unidad III — Diseño y desarrollo",
+    text:"¿Qué es la técnica de Focus Group en el contexto de pruebas de un proyecto?",
+    correctText:"Una sesión de discusión con un grupo seleccionado de especialistas o usuarios para evaluar el proyecto",
+    options:[
+      "Una herramienta automática para detectar errores en el código fuente",
+      "Una sesión de discusión con un grupo seleccionado de especialistas o usuarios para evaluar el proyecto",
+      "Un diagrama que muestra el flujo de datos del sistema",
+      "Un protocolo para realizar pruebas unitarias al software"
+    ],
+    explanation:"El Focus Group es una técnica de prueba que reúne a especialistas o usuarios para obtener retroalimentación cualitativa sobre el proyecto o prototipo."
+  },
+  {
+    unit:"Unidad III — Diseño y desarrollo",
+    text:"¿Qué incluye la ejecución del plan del proyecto en la Unidad III?",
+    correctText:"Elaborar el anteproyecto o prototipo aplicando conocimientos, técnicas y metodologías alineadas al perfil del programa",
+    options:[
+      "Solo redactar el documento de requerimientos del sistema",
+      "Únicamente presentar el presupuesto actualizado al equipo directivo",
+      "Solo definir los roles y responsabilidades del equipo de trabajo",
+      "Elaborar el anteproyecto o prototipo aplicando conocimientos, técnicas y metodologías alineadas al perfil del programa"
+    ],
+    explanation:"La ejecución del plan implica redactar y elaborar el anteproyecto o prototipo aplicando los conocimientos y metodologías adecuadas para resolver el problema identificado."
+  },
+  {
+    unit:"Unidad III — Diseño y desarrollo",
+    text:"¿Cuántas horas totales tiene la Unidad III de Diseño, aplicación, desarrollo y pruebas?",
+    correctText:"36 horas totales",
+    options:[
+      "12 horas totales",
+      "6 horas totales",
+      "36 horas totales",
+      "60 horas totales"
+    ],
+    explanation:"La Unidad III tiene 7 horas del saber + 29 horas del saber hacer = 36 horas totales, siendo la unidad con mayor carga horaria de la asignatura."
+  },
+
+  // Unidad IV — Adaptación y divulgación
+  {
+    unit:"Unidad IV — Adaptación y divulgación",
+    text:"¿Qué implica la adaptación del proyecto en la Unidad IV?",
+    correctText:"Realizar adecuaciones, cambios y mejoras al plan original documentando los progresos y verificando indicadores",
+    options:[
+      "Realizar adecuaciones, cambios y mejoras al plan original documentando los progresos y verificando indicadores",
+      "Reiniciar el proyecto desde cero con un equipo diferente",
+      "Eliminar los requerimientos que no pudieron cumplirse en el plazo",
+      "Solo presentar el proyecto al docente para su evaluación final"
+    ],
+    explanation:"La adaptación implica realizar adecuaciones al plan original, documentar los progresos, los problemas surgidos y verificar los resultados con indicadores de desempeño."
+  },
+  {
+    unit:"Unidad IV — Adaptación y divulgación",
+    text:"¿Cuáles son los medios de divulgación mencionados en la asignatura?",
+    correctText:"Exposición, medios audiovisuales (video, cartel, presentación) y medios impresos (manuales, artículos, informes)",
+    options:[
+      "Solo publicación en redes sociales y blogs personales",
+      "Únicamente entrega de un informe escrito al docente",
+      "Exposición, medios audiovisuales (video, cartel, presentación) y medios impresos (manuales, artículos, informes)",
+      "Solo presentación oral ante el grupo sin materiales de apoyo"
+    ],
+    explanation:"Los medios de divulgación incluyen exposición, medios audiovisuales (video, cartel, presentación) y medios impresos (manuales, congresos, artículos, informes)."
+  },
+  {
+    unit:"Unidad IV — Adaptación y divulgación",
+    text:"¿Qué es la retrospectiva del proyecto en metodologías ágiles?",
+    correctText:"Un proceso de reflexión del equipo para identificar áreas de mejora continua y lecciones aprendidas",
+    options:[
+      "La presentación final del producto terminado a los clientes",
+      "Un proceso de reflexión del equipo para identificar áreas de mejora continua y lecciones aprendidas",
+      "La revisión del código fuente por parte de un auditor externo",
+      "El cierre administrativo y financiero del proyecto"
+    ],
+    explanation:"La retrospectiva es un proceso ágil en el que el equipo reflexiona sobre lo que funcionó, lo que no, y cómo mejorar continuamente en futuros sprints o proyectos."
+  },
+
+  // General
+  {
+    unit:"General",
+    text:"¿Cuál es el propósito de aprendizaje de la asignatura Proyecto Integrador I?",
+    correctText:"Implementar una metodología ágil en una situación de integración compleja que culmine en un producto evaluable holísticamente",
+    options:[
+      "Aprender a programar en lenguajes de alto nivel de forma individual",
+      "Diseñar bases de datos relacionales para sistemas empresariales",
+      "Implementar una metodología ágil en una situación de integración compleja que culmine en un producto evaluable holísticamente",
+      "Estudiar los fundamentos teóricos de la ingeniería de software clásica"
+    ],
+    explanation:"El propósito es implementar una metodología ágil para ejercer una situación de integración compleja que culmine en un producto evaluable de manera holística, considerando conocimiento teórico y habilidades prácticas."
+  },
+  {
+    unit:"General",
+    text:"¿Cuántas horas totales tiene la asignatura Proyecto Integrador I?",
+    correctText:"60 horas totales",
+    options:[
+      "90 horas totales",
+      "75 horas totales",
+      "45 horas totales",
+      "60 horas totales"
+    ],
+    explanation:"La asignatura tiene 60 horas totales: 17 horas del saber y 43 horas del saber hacer, distribuidas en 4 unidades de aprendizaje."
+  },
+  {
+    unit:"General",
+    text:"¿Qué es el Aprendizaje Basado en Proyectos (ABP)?",
+    correctText:"Una metodología pedagógica en la que los estudiantes aprenden resolviendo un problema o desarrollando un proyecto real",
+    options:[
+      "Una metodología pedagógica en la que los estudiantes aprenden resolviendo un problema o desarrollando un proyecto real",
+      "Un sistema de evaluación basado únicamente en exámenes escritos",
+      "Una técnica de programación orientada a objetos para proyectos de software",
+      "Un método de investigación exclusivamente cuantitativa"
+    ],
+    explanation:"El Aprendizaje Basado en Proyectos es una metodología en la que los estudiantes desarrollan conocimientos y habilidades resolviendo problemas reales o desarrollando proyectos con impacto social."
+  }
+];
+
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+function buildQuestions() {
+  return bank.map(q => {
+    const shuffled = shuffle(q.options);
+    return { unit: q.unit, text: q.text, options: shuffled, correct: shuffled.indexOf(q.correctText), explanation: q.explanation };
+  });
+}
+
+let questions = [], currentQ = 0, answers = [], score = 0, studentName = '';
+
+function startQuiz() {
+  const input = document.getElementById('student-name').value.trim();
+  if (!input) { document.getElementById('student-name').style.borderColor='var(--wrong)'; document.getElementById('student-name').focus(); return; }
+  studentName = input;
+  questions = buildQuestions();
+  answers = new Array(questions.length).fill(null);
+  document.getElementById('name-screen').style.display = 'none';
+  document.getElementById('quiz-container').style.display = 'block';
+  renderQuiz();
+}
+
+document.getElementById('student-name').addEventListener('keydown', e => {
+  if (e.key === 'Enter') startQuiz();
+  document.getElementById('student-name').style.borderColor = '';
+});
+
+function renderQuiz() {
+  const container = document.getElementById('quiz-container');
+  container.innerHTML = '';
+  questions.forEach((q, i) => {
+    const card = document.createElement('div');
+    card.className = 'question-card' + (i === 0 ? ' active' : '');
+    card.id = `q-${i}`;
+    card.innerHTML = `
+      <div class="q-header">
+        <div class="q-number">${i+1}</div>
+        <span class="q-unit">${q.unit}</span>
+      </div>
+      <div class="q-text">${q.text}</div>
+      <div class="options" id="opts-${i}">
+        ${q.options.map((opt,j) => `
+          <div class="option" id="opt-${i}-${j}" onclick="selectAnswer(${i},${j})">
+            <span class="option-letter">${['A','B','C','D'][j]}</span>
+            <span>${opt}</span>
+          </div>`).join('')}
+      </div>
+      <div class="feedback" id="fb-${i}"></div>
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" onclick="navigate(-1)" ${i===0?'disabled':''}>← Anterior</button>
+        <button class="btn btn-primary" id="next-btn-${i}" onclick="${i===questions.length-1?'showResults()':'navigate(1)'}" disabled>
+          ${i===questions.length-1?'Ver resultados →':'Siguiente →'}
+        </button>
+      </div>`;
+    container.appendChild(card);
+  });
+  updateProgress();
+}
+
+function selectAnswer(qIdx, optIdx) {
+  if (answers[qIdx] !== null) return;
+  answers[qIdx] = optIdx;
+  const q = questions[qIdx];
+  document.querySelectorAll(`#opts-${qIdx} .option`).forEach(o => o.classList.add('disabled'));
+  document.getElementById(`opt-${qIdx}-${optIdx}`).classList.add(optIdx === q.correct ? 'correct' : 'wrong');
+  if (optIdx !== q.correct) document.getElementById(`opt-${qIdx}-${q.correct}`).classList.add('correct');
+  if (optIdx === q.correct) score++;
+  const fb = document.getElementById(`fb-${qIdx}`);
+  fb.textContent = (optIdx === q.correct ? '✓ Correcto. ' : '✗ Incorrecto. ') + q.explanation;
+  fb.className = 'feedback show ' + (optIdx === q.correct ? 'correct-fb' : 'wrong-fb');
+  document.getElementById(`next-btn-${qIdx}`).disabled = false;
+  updateProgress();
+}
+
+function navigate(dir) {
+  document.getElementById(`q-${currentQ}`).classList.remove('active');
+  currentQ += dir;
+  document.getElementById(`q-${currentQ}`).classList.add('active');
+  updateProgress();
+}
+
+function updateProgress() {
+  const answered = answers.filter(a => a !== null).length;
+  document.getElementById('progress-fill').style.width = (answered / questions.length * 100) + '%';
+  document.getElementById('progress-text').textContent = `${answered} / ${questions.length}`;
+}
+
+function showResults() {
+  document.getElementById('quiz-container').style.display = 'none';
+  document.getElementById('results-screen').classList.add('active');
+  document.getElementById('student-label').textContent = `Alumno: ${studentName}`;
+  document.getElementById('score-num').textContent = score;
+  const pct = score / questions.length;
+  let title, sub;
+  if (pct >= 0.9)      { title='¡Excelente base!';      sub='Tienes conocimientos sólidos sobre gestión de proyectos.'; }
+  else if (pct >= 0.7) { title='Buen punto de partida'; sub='Refuerza algunos conceptos antes de iniciar.'; }
+  else if (pct >= 0.5) { title='Conocimiento básico';   sub='Hay áreas importantes que explorar durante el curso.'; }
+  else                 { title='¡Bienvenido al tema!';  sub='Este curso te dará las herramientas que necesitas.'; }
+  document.getElementById('result-title').textContent = title;
+  document.getElementById('result-sub').textContent = sub + ` (${score}/20 correctas)`;
+  const grid = document.getElementById('review-grid');
+  answers.forEach((a, i) => {
+    const cell = document.createElement('div');
+    cell.className = 'review-item ' + (a === questions[i].correct ? 'c' : 'w');
+    cell.textContent = i + 1;
+    grid.appendChild(cell);
+  });
+  new QRCode(document.getElementById('qrcode'), { text:window.location.href, width:160, height:160, colorDark:'#000000', colorLight:'#ffffff' });
+  saveToSheet();
+}
+
+async function saveToSheet() {
+  const status = document.getElementById('save-status');
+  const now = new Date();
+  const detalle = answers.map((a,i) => a === questions[i].correct ? '✓' : '✗').join(' ');
+  const params = new URLSearchParams({
+    nombre: studentName,
+    fecha: now.toLocaleDateString('es-MX'),
+    hora: now.toLocaleTimeString('es-MX'),
+    puntaje: score,
+    total: questions.length,
+    porcentaje: Math.round(score / questions.length * 100) + '%',
+    detalle: detalle
+  });
+  try {
+    await fetch(WEBAPP_URL + '?' + params.toString(), { method:'GET', mode:'no-cors' });
+    status.className = 'save-status saved';
+    status.textContent = '✓ Resultados guardados en Google Sheets';
+  } catch(e) {
+    status.className = 'save-status error';
+    status.textContent = '⚠ No se pudo guardar. Verifica la conexión.';
+  }
+}
+
+function restartQuiz() {
+  currentQ = 0; score = 0; studentName = ''; answers = [];
+  document.getElementById('results-screen').classList.remove('active');
+  document.getElementById('results-screen').innerHTML = `
+    <div class="student-label" id="student-label">—</div>
+    <div class="score-circle"><div class="score-num" id="score-num">0</div><div class="score-label">/ 20</div></div>
+    <div class="result-title" id="result-title">—</div>
+    <div class="result-sub" id="result-sub">—</div>
+    <div class="save-status saving" id="save-status">⏳ Guardando resultados...</div>
+    <div class="review-grid" id="review-grid"></div>
+    <button class="btn-restart" onclick="restartQuiz()">↺ Nuevo intento</button>
+    <div class="qr-section"><h3>📱 Comparte este examen</h3><p>Escanea el QR para acceder desde cualquier dispositivo</p><div id="qrcode"></div></div>`;
+  document.getElementById('quiz-container').style.display = 'none';
+  document.getElementById('name-screen').style.display = 'block';
+}
+</script>
+</body>
+</html>
