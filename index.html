@@ -514,6 +514,7 @@ async function saveToSheet() {
   const now = new Date();
   const detalle = answers.map((a,i) => a === questions[i].correct ? '✓' : '✗').join(' ');
   const params = new URLSearchParams({
+    examen:     'Proyecto Integrador I',  // ← agregar esta línea
     nombre: studentName,
     fecha: now.toLocaleDateString('es-MX'),
     hora: now.toLocaleTimeString('es-MX'),
